@@ -1,0 +1,677 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Survey Analysis Dashboard</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- ECharts & PapaParse -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        :root {
+            --primary: #391969;
+            --bg-color: #ececfe;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --text-muted: #666666;
+            --accent: #5e2aab;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* ---------------- Sidebar Styles ---------------- */
+        .sidebar {
+            width: 280px;
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background-color: var(--card-bg);
+            border-right: 1px solid rgba(57, 25, 105, 0.08);
+            box-shadow: 2px 0 15px rgba(57, 25, 105, 0.03);
+            padding: 2rem 0;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 0 1.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .sidebar-header h2 {
+            color: var(--primary);
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .nav-links {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .nav-links li {
+            margin: 0.2rem 0;
+        }
+
+        .nav-links a {
+            display: block;
+            padding: 1rem 1.5rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            border-left: 4px solid transparent;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            background-color: rgba(57, 25, 105, 0.03);
+            color: var(--primary);
+        }
+
+        .nav-links a.active {
+            background-color: rgba(57, 25, 105, 0.08);
+            color: var(--primary);
+            border-left-color: var(--primary);
+        }
+
+        /* ---------------- Main Content Styles ---------------- */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 3rem 4rem;
+        }
+
+        header {
+            text-align: left;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        h1 {
+            color: var(--primary);
+            font-size: 2.4rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(57, 25, 105, 0.05);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(57, 25, 105, 0.08);
+        }
+
+        .chart-container {
+            width: 100%;
+        }
+
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(57, 25, 105, 0.3);
+            border-radius: 4px;
+        }
+
+        /* ---------------- Responsive ---------------- */
+        @media(max-width: 992px) {
+            body {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: sticky;
+                top: 0;
+                background-color: var(--card-bg);
+                border-right: none;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+                padding: 1rem 0;
+                z-index: 100;
+                box-shadow: 0 2px 10px rgba(57, 25, 105, 0.1);
+            }
+
+            .sidebar-header {
+                margin-bottom: 1rem;
+            }
+
+            .nav-links {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .nav-links a {
+                padding: 0.5rem 1rem;
+                border-left: none;
+                border-bottom: 3px solid transparent;
+            }
+
+            .nav-links a.active {
+                border-left-color: transparent;
+                border-bottom-color: var(--primary);
+                background-color: transparent;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h2>Survey Analysis</h2>
+        </div>
+        <ul class="nav-links" id="scrollspy-nav">
+            <li><a href="#overview" class="active">Overview & Demographics</a></li>
+            <li><a href="#operations">Operations & Status</a></li>
+            <li><a href="#pain-points">Pain Points & Problems</a></li>
+            <li><a href="#behavior">Buying Behavior & Criteria</a></li>
+            <li><a href="#features">Feature Evaluation</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <header>
+            <h1>Advanced Market Demand & Needs Analysis</h1>
+            <p class="subtitle">Complete Diagnostic Dashboard</p>
+        </header>
+
+        <div id="dashboard-sections">
+            <!-- Sections will be generated dynamically by JS -->
+        </div>
+    </main>
+
+    <!-- Injecting CSV content -->
+    <script id="csv-data" type="text/csv">
+Timestamp,Company Name,Position,"Do you participate in selecting suppliers, proposing budgets, or approving costs for surveying/field monitoring activities?",Industry/Sector,Main Operating Area,Total Area/Land Managed,"Average number of surveying/monitoring projects per year","Methods used for surveying/monitoring in the past 12 months","Have you hired external suppliers for surveying/monitoring in the past 24 months?","If yes, what type of supplier have you worked with?",Frequency of collecting or updating field data,"Software/tools used to store, process, or track field data","How is field data usually stored or shared in recent deployments?","Difficulties faced in the most recent surveying/monitoring","Biggest difficulty in the most recent hiring of a supplier","Have you encountered any of these problems in recent deployments?","Most valued metric when evaluating recent surveying/monitoring","BIGGEST need to address related to the field in the next 12 months","Top 3 criteria for selecting a service provider",Most useful deliverables,"Channels searched when finding a new supplier","Information checked first from a list of suppliers","Approximate budget spent per surveying/monitoring project in the past 24 months","Considered budget for a similar future need",How is the cost for this type of service usually evaluated?,"Under what form do surveying/monitoring needs usually arise?",Most suitable service purchasing model,"Payment method usually applied for outsourced services",Usefulness: [Support for flight permissions/procedures],Usefulness: [Online data portal / dashboard],Usefulness: [Fast processing and delivery],Usefulness: [Private secure data storage],Usefulness: [Support for in-depth data analysis],Usefulness: [Consulting on data integration into internal workflows],"Top 2 priorities among the additional items above",Biggest barrier to trying a new supplier
+21/03/2026 15:27:13,Quang Nam Forestry LLC,Head of Technical Department,"Yes, direct participation",Forestry / Afforestation / Forest Inventory / Carbon Credits,Mountainous / Forest / Complex Terrain,10–50 ha,2-5 times/year,"Hire external traditional surveying units, Rely on manual field reports / phone images",Yes,"Traditional surveying unit, Consulting unit integrating surveying and GIS",Quarterly,"AutoCAD / Civil 3D, QGIS / ArcGIS / GIS software","Files sent via Zalo / messaging apps, Online data portal / dashboard",Data is not accurate enough or lacks consistency,Data quality does not meet requirements,"Data is not accurate enough for intended use, Results are not convenient for reports or records, Delays due to having to recheck the site",Data accuracy,Inventory of area / assets / resources,"Price / total cost, Implementation schedule, Data accuracy","2D/3D maps, Coordinate maps / digital data layers, Dashboard / online data portal",Referral from partners / acquaintances,"Similar completed projects, Equipment and technical capabilities, Price",150–250 million VND,150–250 million VND,Per total project package,By periodic milestones in the year,Combination depending on the time,"Advance payment, remaining balance upon delivery, Depending on the project / contract",Very useful,Useful in some cases,Useful in some cases,Very useful,Useful in some cases,Useful in some cases,"Procedural / legal support, Private secure storage",Concern about unsatisfactory data quality
+21/03/2026 15:35:26,Khanh Hanh Forestry Service Company,Head of Planning Department,"Yes, partial participation",Forestry / Afforestation / Forest Inventory / Carbon Credits,Neighboring provinces in the Central region,10–50 ha,2-5 times/year,Hire external traditional surveying units,Yes,Traditional surveying unit,Quarterly,QGIS / ArcGIS / GIS software,Separate files sent via email,Data is not accurate enough or lacks consistency,Data quality does not meet requirements,"Data is not accurate enough for intended use, Results are not convenient for reports or records, Data is difficult to compare over time",Data accuracy,Surveying current status,"Price / total cost, Implementation schedule, Data accuracy","2D/3D maps, Coordinate maps / digital data layers, Current status video",Google / online search,"Similar completed projects, Equipment and technical capabilities, Price",100–150 million VND,100–150 million VND,Per total project package,By periodic milestones in the year,Framework contract for multiple batches per year,"Advance payment, remaining balance upon delivery",Very useful,Useful in some cases,Useful in some cases,Very useful,Not necessary,Not necessary,"Procedural / legal support, Private secure storage",Concern about data security
+21/03/2026 18:55:57,My Khe Real Estate Company,Head of Project Department,"Yes, direct participation",Real Estate / Resorts / Landscape Infrastructure,Neighboring provinces in the Central region,10–50 ha,Under 2 times/year,Hire professional drone companies,Yes,Professional drone company,Only when special needs arise,Not using specialized tools,"Files sent via Zalo / messaging apps, Internal shared folders",High implementation cost,Cost higher than expected,"Data is not accurate enough for intended use, Delays due to having to recheck the site",Data accuracy,Early detection of risks or anomalies,"Price / total cost, Implementation schedule, Data accuracy","Orthophoto / current status images, 2D/3D maps, Dashboard / online data portal",Facebook / Zalo / social networks,"Estimated implementation time, Price, Legal records / licenses / invoices",150–250 million VND,100–150 million VND,By area,"Infrequently, only when specifically requested",Hire per arising need,"Advance payment, remaining balance upon delivery",Very useful,Useful in some cases,Very useful,Useful in some cases,Not necessary,Not necessary,"Procedural / legal support, Private secure storage",Concern about unexpected costs
+21/03/2026 19:13:22,First Real Estate JSC,Head of Project Development,"Yes, partial participation",Real Estate / Resorts / Landscape Infrastructure,Neighboring provinces in the Central region,50–200 ha,2-5 times/year,"Hire external traditional surveying units, Rely on manual field reports / phone images",Yes,"Traditional surveying unit, Consulting unit integrating surveying and GIS",Quarterly,"AutoCAD / Civil 3D, QGIS / ArcGIS / GIS software, Internal management software / ERP / PM","Separate files sent via email, Files sent via Zalo / messaging apps, Online data portal / dashboard",Spend a lot of time on site,Data quality does not meet requirements,"Data is not accurate enough for intended use, Results are not convenient for reports or records",Data accuracy,Create data for reports / records / management,"Price / total cost, Implementation schedule, Data accuracy","Orthophoto / current status images, 2D/3D maps, Coordinate maps / digital data layers",Google / online search,"Similar completed projects, Equipment and technical capabilities, Price",150–250 million VND,150–250 million VND,Per total project package,By periodic milestones in the year,Periodic package by month or quarter,Depending on the project / contract,Very useful,Very useful,Very useful,Very useful,Useful in some cases,Not necessary,"Fast / urgent processing, Private secure storage",Concern about lack of legal records / documents
+23/03/2026 15:06:42,Tran Van Hien Forestry Service,Director,"Yes, direct participation",Forestry / Afforestation / Forest Inventory / Carbon Credits,Suburban areas,50–200 ha,2-5 times/year,Hire external traditional surveying units,Yes,Traditional surveying unit,Quarterly,"AutoCAD / Civil 3D, QGIS / ArcGIS / GIS software","Separate files sent via email, Files sent via Zalo / messaging apps, PDF reports, Online data portal / dashboard",Data is not accurate enough or lacks consistency,Data quality does not meet requirements,"Data is not accurate enough for intended use, Results are not convenient for reports or records, Data is difficult to compare over time",Data accuracy,Surveying current status,"Price / total cost, Data accuracy, Reliability / reputation","Orthophoto / current status images, 2D/3D maps, Current status video",Google / online search,"Similar completed projects, Equipment and technical capabilities, Price",150–250 million VND,150–250 million VND,Per total project package,By periodic milestones in the year,Framework contract for multiple batches per year,"Advance payment, remaining balance upon delivery",Very useful,Useful in some cases,Useful in some cases,Very useful,Useful in some cases,Not necessary,"Procedural / legal support, Private secure storage",Concern about unsatisfactory data quality
+23/03/2026 15:13:02,Tra Tan Forestry Company,Deputy Management Manager,"Yes, partial participation",Forestry / Afforestation / Forest Inventory / Carbon Credits,Neighboring provinces in the Central region,50–200 ha,Not fixed / depends on project,Hire professional drone companies,No,,Only when special needs arise,AutoCAD / Civil 3D,Files sent via Zalo / messaging apps,No significant difficulties,No significant problems,"Data is not accurate enough for intended use, Delays due to having to recheck the site",Data accuracy,Surveying current status,"Price / total cost, Data accuracy, Legal records / invoices / documents","Orthophoto / current status images, 2D/3D maps, Coordinate maps / digital data layers",Google / online search,"Equipment and technical capabilities, Price, Legal records / licenses / invoices",100–150 million VND,100–150 million VND,Per total project package,"Infrequently, only when specifically requested",Combination depending on the time,"Advance payment, remaining balance upon delivery",Very useful,Useful in some cases,Very useful,Very useful,Useful in some cases,Useful in some cases,"Procedural / legal support, Private secure storage",Concern about unsatisfactory data quality
+23/03/2026 15:14:04,Tien Nong Agriculture and Industry JSC,Head of High-tech Agriculture Department,"No, mainly just use data",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+23/03/2026 15:29:45,Asia Minerals JSC,Head of Operations Department,"Yes, direct participation",Mining / Minerals / Building Materials,Mountainous / Forest / Complex Terrain,50–200 ha,2-5 times/year,"Hire external traditional surveying units, Self-operate consumer drones",Yes,Traditional surveying unit,Quarterly,AutoCAD / Civil 3D,"Files sent via Zalo / messaging apps, Online data portal / dashboard",Spend a lot of time on site,Cost higher than expected,"Data is difficult to compare over time, Lack of a centralized data storage point, Delays due to having to recheck the site",Data accuracy,Surveying current status,"Price / total cost, Implementation schedule, Field coordination capability","Orthophoto / current status images, 2D/3D maps, Current status video",Referral from partners / acquaintances,"Equipment and technical capabilities, Price, Legal records / licenses / invoices",150–250 million VND,150–250 million VND,Per total project package,By project phase,Combination depending on the time,"Advance payment, remaining balance upon delivery",Very useful,Very useful,Very useful,Very useful,Useful in some cases,Useful in some cases,"Procedural / legal support, Private secure storage",Concern about unsatisfactory data quality
+23/03/2026 15:42:20,Quang Nam Forestry Investment and Development JSC,Director,"Yes, direct participation",Forestry / Afforestation / Forest Inventory / Carbon Credits,Mountainous / Forest / Complex Terrain,10–50 ha,Not fixed / depends on project,Hire external traditional surveying units,Yes,Traditional surveying unit,Only when special needs arise,AutoCAD / Civil 3D,"Files sent via Zalo / messaging apps, Internal shared folders, Maps or structured digital data",Spend a lot of time on site,No significant problems,Delays due to having to recheck the site,Data accuracy,Inventory of area / assets / resources,"Price / total cost, Data accuracy, Legal records / invoices / documents","Orthophoto / current status images, 2D/3D maps, Coordinate maps / digital data layers",Referral from partners / acquaintances,"Similar completed projects, Equipment and technical capabilities, Price",100–150 million VND,100–150 million VND,By area,"Infrequently, only when specifically requested",Hire per arising need,"Advance payment, remaining balance upon delivery",Very useful,Very useful,Useful in some cases,Very useful,Useful in some cases,Useful in some cases,"Procedural / legal support, Private secure storage",Concern about data security
+23/03/2026 15:57:07,Nam Hoa Forestry LLC,Head of Technical Department,"Yes, partial participation",Forestry / Afforestation / Forest Inventory / Carbon Credits,Mountainous / Forest / Complex Terrain,50–200 ha,2-5 times/year,Hire external traditional surveying units,Yes,Traditional surveying unit,Quarterly,AutoCAD / Civil 3D,Files sent via Zalo / messaging apps,Data is not accurate enough or lacks consistency,Data quality does not meet requirements,"Data is not accurate enough for intended use, Data is difficult to compare over time",Data accuracy,Surveying current status,"Price / total cost, Data accuracy, Legal records / invoices / documents","Orthophoto / current status images, 2D/3D maps, Coordinate maps / digital data layers",Google / online search,"Similar completed projects, Equipment and technical capabilities, Price",100–150 million VND,100–150 million VND,By area,By periodic milestones in the year,Periodic package by month or quarter,"Advance payment, remaining balance upon delivery",Very useful,Useful in some cases,Useful in some cases,Very useful,Useful in some cases,Useful in some cases,,Concern about data security
+23/03/2026 16:35:54,Quang Nam Agricultural Seed JSC,Head of Planting Area Development,"Yes, partial participation",Agriculture / Farms / Raw Material Areas,Suburban areas,50–200 ha,2-5 times/year,Hire external traditional surveying units,Yes,Traditional surveying unit,Quarterly,AutoCAD / Civil 3D,"Separate files sent via email, Files sent via Zalo / messaging apps, Internal shared folders, PDF reports",Data is not accurate enough or lacks consistency,Data quality does not meet requirements,"Data is not accurate enough for intended use, Results are not convenient for reports or records",Data accuracy,Monitor progress / changes over time,"Price / total cost, Data accuracy, Reliability / reputation","Orthophoto / current status images, Coordinate maps / digital data layers, Data for technical records",Referral from partners / acquaintances,"Equipment and technical capabilities, Price",150–250 million VND,150–250 million VND,Per total project package,By periodic milestones in the year,Framework contract for multiple batches per year,"Advance payment, remaining balance upon delivery",Useful in some cases,Useful in some cases,Useful in some cases,Very useful,Very useful,Not necessary,"Procedural / legal support, Private secure storage",Concern about unsatisfactory data quality
+24/03/2026 13:15:59,Trieu Hai Forestry Company ,Manager,"Yes, direct participation",Forestry / Afforestation / Forest Inventory / Carbon Credits,Mountainous / Forest / Complex Terrain,50–200 ha,2-5 times/year,Hire external traditional surveying units,Yes,Traditional surveying unit,Quarterly,Not using specialized tools,"Separate files sent via email, Files sent via Zalo / messaging apps, Internal shared folders",Data is not accurate enough or lacks consistency,Data quality does not meet requirements,"Data is not accurate enough for intended use, Results are not convenient for reports or records, Data is difficult to compare over time",Data accuracy,Inventory of area / assets / resources,"Price / total cost, Data accuracy, Field coordination capability","Orthophoto / current status images, 2D/3D maps, Before-after comparison by timeline",Google / online search,"Similar completed projects, Equipment and technical capabilities, Price",100–150 million VND,100–150 million VND,Per total project package,By periodic milestones in the year,Periodic package by month or quarter,"Advance payment, remaining balance upon delivery",Very useful,Useful in some cases,Useful in some cases,Very useful,Useful in some cases,Useful in some cases,"Procedural / legal support, Private secure storage",Concern about unsatisfactory data quality
+24/03/2026 13:21:08,Vu Phung Thanh Co. Ltd.,Director,"Yes, partial participation",Mining / Minerals / Building Materials,Inner city / Urban areas,Under 10 ha,Not fixed / depends on project,Rely on manual field reports / phone images,No,,Only when special needs arise,Not using specialized tools,"Separate files sent via email, Files sent via Zalo / messaging apps, PDF reports",Spend a lot of time on site,Cost higher than expected,"Data is not accurate enough for intended use, Delays due to having to recheck the site",Data accuracy,Not clearly defined,"Price / total cost, Data accuracy, Reliability / reputation, Ability to handle difficult terrain","Orthophoto / current status images, Comprehensive PDF reports, Data for technical records",Facebook / Zalo / social networks,"Equipment and technical capabilities, Estimated implementation time, Price",Under 50 million VND,Need quotes per specific project,Combination of methods,"Infrequently, only when specifically requested",Combination depending on the time,"Advance payment, remaining balance upon delivery, approx. 30 days debt",Very useful,Useful in some cases,Very useful,Very useful,Not necessary,Useful in some cases,"Fast / urgent processing, Private secure storage",Concern about unsatisfactory data quality
+24/03/2026 13:34:30,Bao Minh Ecotourism JSC,Manager,"Yes, partial participation",Conservation / Heritage / Ecotourism,Suburban areas,10–50 ha,2-5 times/year,Hire professional drone companies,Yes,Professional drone company,Only when special needs arise,Not using specialized tools,"Files sent via Zalo / messaging apps, Internal shared folders",Spend a lot of time on site,Difficult to coordinate on site,Delays due to having to recheck the site,Data accuracy,Monitor progress / changes over time,"Price / total cost, Data accuracy, Reliability / reputation","Orthophoto / current status images, 2D/3D maps, Current status video",Facebook / Zalo / social networks,"Client / partner list, Equipment and technical capabilities, Price",50–100 million VND,50–100 million VND,Per total project package,"Infrequently, only when specifically requested",Hire per arising need,Depending on the project / contract,Very useful,Very useful,Useful in some cases,Useful in some cases,Useful in some cases,Not necessary,"Procedural / legal support, Fast / urgent processing",Concern about data security
+24/03/2026 13:35:53,Moon Group,Manager ,"Yes, direct participation",Real Estate / Resorts / Landscape Infrastructure,Inner city / Urban areas,10–50 ha,6-10 times/year,"Hire external traditional surveying units, Self-operate consumer drones, Hire professional drone companies, Rely on manual field reports / phone images",Yes,"Freelancer / drone crew, Professional drone company",2 - 4 times/month,"Excel / Google Sheets, Internal management software / ERP / PM, Regular map applications","Internal shared folders, Maps or structured digital data, Online data portal / dashboard",No significant difficulties,Cost higher than expected,"Data is not accurate enough for intended use, Delays due to having to recheck the site",Actual cost,Early detection of risks or anomalies,"Price / total cost, Data accuracy, Legal records / invoices / documents, Field coordination capability, Reliability / reputation, Ability to handle difficult terrain","2D/3D maps, Current status video, Before-after comparison by timeline",Facebook / Zalo / social networks,"Equipment and technical capabilities, Estimated implementation time, Price, Legal records / licenses / invoices",50–100 million VND,50–100 million VND,Per total project package,By project phase,Combination depending on the time,"Payment after receiving full records and invoices, 45-60 days debt",Very useful,Very useful,Useful in some cases,Very useful,Useful in some cases,Not necessary,"Procedural / legal support, Private secure storage",Concern about unsatisfactory data quality
+24/03/2026 14:01:24,Dong Phuong Sea Villas and Hotel JSC,Purchasing Manager,"Yes, direct participation",Real Estate / Resorts / Landscape Infrastructure,Coastal / Island areas,10–50 ha,2-5 times/year,"Hire professional drone companies, Rely on manual field reports / phone images",Yes,Professional drone company,Quarterly,Internal management software / ERP / PM,"Files sent via Zalo / messaging apps, Internal shared folders",High implementation cost,Cost higher than expected,No significant problems encountered,Actual cost,Not clearly defined,"Price / total cost, Legal records / invoices / documents, Easy-to-use output reports","Orthophoto / current status images, 2D/3D maps, Before-after comparison by timeline",Facebook / Zalo / social networks,"Price, Legal records / licenses / invoices",50–100 million VND,Under 50 million VND,By specific output requirement,By periodic milestones in the year,Periodic package by month or quarter,"Advance payment, remaining balance upon delivery",Very useful,Very useful,Useful in some cases,Very useful,Useful in some cases,Very useful,"Procedural / legal support, Private secure storage",Concern about unexpected costs
+25/03/2026 16:34:21,Con Bap Ecotourism Company,Head of Technical Department,"Yes, partial participation",Conservation / Heritage / Ecotourism,Neighboring provinces in the Central region,10–50 ha,2-5 times/year,Hire professional drone companies,Yes,Professional drone company,Quarterly,Not using specialized tools,"Files sent via Zalo / messaging apps, Internal shared folders",No significant difficulties,No significant problems,No significant problems encountered,Data accuracy,Monitor progress / changes over time,"Price / total cost, Data accuracy, Reliability / reputation","Orthophoto / current status images, Current status video, Before-after comparison by timeline",Previous suppliers,"Similar completed projects, Equipment and technical capabilities, Price",50–100 million VND,50–100 million VND,By area,By periodic milestones in the year,Periodic package by month or quarter,"Advance payment, remaining balance upon delivery",Very useful,Useful in some cases,Useful in some cases,Very useful,Useful in some cases,Not necessary,"Procedural / legal support, Private secure storage",Concern about lack of legal records / documents
+25/03/2026 16:43:57,Da Nang Infrastructure Construction and Urban Development Project Management Board,Head of Project Development,"Yes, partial participation",State Management Agency / Project Management Board,Inner city / Urban areas,10–50 ha,6-10 times/year,"Hire external traditional surveying units, Rely on manual field reports / phone images",Yes,Traditional surveying unit,Weekly or more frequent,"Internal management software / ERP / PM, Regular map applications","Separate files sent via email, Files sent via Zalo / messaging apps, Internal shared folders",Spend a lot of time on site,Difficult to coordinate on site,"Data is not accurate enough for intended use, Results are not convenient for reports or records, Data is difficult to compare over time",Data accuracy,Monitor progress / changes over time,"Price / total cost, Implementation schedule, Data accuracy","Orthophoto / current status images, Current status video, Before-after comparison by timeline",Industry groups,"Equipment and technical capabilities, Price, Legal records / licenses / invoices",50–100 million VND,50–100 million VND,By area,By project phase,Combination depending on the time,"Advance payment, remaining balance upon delivery",Very useful,Very useful,Very useful,Very useful,Useful in some cases,Useful in some cases,"Procedural / legal support, Dashboard / online data portal",Concern about delayed progress
+25/03/2026 16:50:52,Quang Ngai Minerals JSC,Project Manager,"Yes, partial participation",Mining / Minerals / Building Materials,Mountainous / Forest / Complex Terrain,10–50 ha,2-5 times/year,Rely on manual field reports / phone images,No,,Weekly or more frequent,Not using specialized tools,Files sent via Zalo / messaging apps,Spend a lot of time on site,Not applicable / never hired an external supplier,"Data is not accurate enough for intended use, Results are not convenient for reports or records, Delays due to having to recheck the site",Data accuracy,Monitor progress / changes over time,"Price / total cost, Data accuracy, Ability to handle difficult terrain","Orthophoto / current status images, 2D/3D maps, Current status video",Google / online search,"Similar completed projects, Client / partner list, Equipment and technical capabilities, Estimated implementation time, Price, Legal records / licenses / invoices",Never occurred,Need quotes per specific project,By specific output requirement,Continuous monitoring / monthly or more frequent,Periodic package by month or quarter,Depending on the project / contract,Useful in some cases,Useful in some cases,Very useful,Useful in some cases,Useful in some cases,Very useful,"Fast / urgent processing, Private secure storage",Concern about data security
+25/03/2026 16:56:09,Ngoc Hoi Forestry Co. Ltd.,Deputy Head of Forestry Technical Department,"No, mainly just use data",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+25/03/2026 17:02:28,Central Region Forestry Consulting LLC,Project Manager,"Yes, partial participation",Forestry / Afforestation / Forest Inventory / Carbon Credits,Inner city / Urban areas,10–50 ha,2-5 times/year,"Hire external traditional surveying units, Rely on manual field reports / phone images",No,,Only when special needs arise,Not using specialized tools,"Files sent via Zalo / messaging apps, Internal shared folders",Spend a lot of time on site,Not applicable / never hired an external supplier,"Results are not convenient for reports or records, Data is difficult to share internally or with partners, Delays due to having to recheck the site",Comprehensibility of deliverables,Inventory of area / assets / resources,"Price / total cost, Data accuracy, Ability to handle difficult terrain","Orthophoto / current status images, Coordinate maps / digital data layers, Dashboard / online data portal",Industry groups,"Equipment and technical capabilities, Price, Sample reports or delivered outputs",50–100 million VND,50–100 million VND,By area,"Infrequently, only when specifically requested",Hire per arising need,"Advance payment, remaining balance upon delivery",Very useful,Useful in some cases,Very useful,Useful in some cases,Very useful,Useful in some cases,"Procedural / legal support, Dashboard / online data portal",Concern about lack of legal records / documents
+25/03/2026 17:09:00,Kon Plong Forestry Co. Ltd.,Head of Planning and Forest Inventory Department,"Yes, direct participation",Forestry / Afforestation / Forest Inventory / Carbon Credits,Mountainous / Forest / Complex Terrain,200–1,000 ha,6-10 times/year,"Hire external traditional surveying units, Rely on manual field reports / phone images",Yes,Traditional surveying unit,Weekly or more frequent,AutoCAD / Civil 3D,"Files sent via Zalo / messaging apps, Internal shared folders",Data is not accurate enough or lacks consistency,Data quality does not meet requirements,"Data is not accurate enough for intended use, Delays due to having to recheck the site",Data accuracy,Surveying current status,"Price / total cost, Implementation schedule, Experience with similar projects","Orthophoto / current status images, Coordinate maps / digital data layers, Current status video, Dashboard / online data portal",Google / online search,"Similar completed projects, Equipment and technical capabilities, Price, Legal records / licenses / invoices, Sample reports or delivered outputs",150–250 million VND,150–250 million VND,Per total project package,Continuous monitoring / monthly or more frequent,Framework contract for multiple batches per year,"Advance payment, remaining balance upon delivery",Very useful,Very useful,Very useful,Useful in some cases,Not necessary,Not necessary,"Procedural / legal support, Private secure storage",Concern about unsatisfactory data quality
+25/03/2026 18:05:24,Da Nang Vinafor JSC,Head of Production Department,"Yes, partial participation",Forestry / Afforestation / Forest Inventory / Carbon Credits,Suburban areas,10–50 ha,2-5 times/year,"Hire external traditional surveying units, Use satellite imagery / existing maps, Rely on manual field reports / phone images",Yes,Traditional surveying unit,Quarterly,"Excel / Google Sheets, AutoCAD / Civil 3D","Separate files sent via email, Files sent via Zalo / messaging apps",Consume a lot of manpower,Data quality does not meet requirements,"Data is not accurate enough for intended use, Data is difficult to compare over time",Data accuracy,Inventory of area / assets / resources,"Price / total cost, Data accuracy, Legal records / invoices / documents","Orthophoto / current status images, 2D/3D maps, Coordinate maps / digital data layers",Referral from partners / acquaintances,"Similar completed projects, Equipment and technical capabilities, Estimated implementation time, Price, Legal records / licenses / invoices",100–150 million VND,100–150 million VND,Per total project package,By periodic milestones in the year,Framework contract for multiple batches per year,"Advance payment, remaining balance upon delivery",Very useful,Useful in some cases,Very useful,Useful in some cases,Very useful,Not necessary,"Procedural / legal support, Private secure storage",Concern about unsatisfactory data quality
+25/03/2026 18:15:36,Quy Nhon Forestry LLC,Head of Project Department,"Yes, direct participation",Forestry / Afforestation / Forest Inventory / Carbon Credits,Mountainous / Forest / Complex Terrain,Over 1,000 ha,Over 10 times/year,Hire professional drone companies,Yes,Professional drone company,2 - 4 times/month,"AutoCAD / Civil 3D, QGIS / ArcGIS / GIS software","Separate files sent via email, Files sent via Zalo / messaging apps, Maps or structured digital data","Difficult to coordinate among stakeholders, High implementation cost",Cost higher than expected,Delays due to having to recheck the site,Actual cost,Inventory of area / assets / resources,"Price / total cost, Data accuracy, Field coordination capability","Orthophoto / current status images, 2D/3D maps, Coordinate maps / digital data layers, Current status video, Comprehensive PDF reports, Before-after comparison by timeline, Dashboard / online data portal",Industry groups,"Similar completed projects, Estimated implementation time, Price, Legal records / licenses / invoices, Sample reports or delivered outputs",Over 250 million VND,150–250 million VND,By area,Continuous monitoring / monthly or more frequent,Framework contract for multiple batches per year,"Advance payment, remaining balance upon delivery",Very useful,Very useful,Very useful,Very useful,Useful in some cases,Useful in some cases,"Procedural / legal support, Fast / urgent processing, Private secure storage",Concern about unexpected costs
+25/03/2026 18:25:10,Ha Thanh Forestry Company ,Head of Technical Department,"Yes, direct participation",Forestry / Afforestation / Forest Inventory / Carbon Credits,Mountainous / Forest / Complex Terrain,Over 1,000 ha,Over 10 times/year,"Self-operate consumer drones, Use satellite imagery / existing maps, Rely on manual field reports / phone images",No,,Weekly or more frequent,"AutoCAD / Civil 3D, QGIS / ArcGIS / GIS software","Separate files sent via email, Files sent via Zalo / messaging apps, Internal shared folders, Maps or structured digital data","Spend a lot of time on site, Consume a lot of manpower, Data is not accurate enough or lacks consistency",Delayed progress,"Data is not accurate enough for intended use, Results are not convenient for reports or records, Data is difficult to compare over time, Delays due to having to recheck the site",Data accuracy,Inventory of area / assets / resources,"Price / total cost, Data accuracy, Ability to handle difficult terrain","Orthophoto / current status images, 2D/3D maps, Coordinate maps / digital data layers, Current status video",Industry groups,"Similar completed projects, Price, Legal records / licenses / invoices, Sample reports or delivered outputs",Over 250 million VND,Need quotes per specific project,Per total project package,By periodic milestones in the year,Periodic package by month or quarter,Depending on the project / contract,Very useful,Useful in some cases,Very useful,Useful in some cases,Useful in some cases,Not necessary,"Procedural / legal support, In-depth data analysis",Concern about unsatisfactory data quality
+25/03/2026 18:47:30,Ia Pa Forestry Co. Ltd.,Head of Field Management Department,"Yes, partial participation",Forestry / Afforestation / Forest Inventory / Carbon Credits,Mountainous / Forest / Complex Terrain,Over 1,000 ha,Over 10 times/year,"Self-operate consumer drones, Use satellite imagery / existing maps, Rely on manual field reports / phone images",No,,Weekly or more frequent,Internal management software / ERP / PM,"Separate files sent via email, Files sent via Zalo / messaging apps, Internal shared folders, Maps or structured digital data, Online data portal / dashboard","Spend a lot of time on site, Data is not accurate enough or lacks consistency, Results are not convenient for reports or records",Data quality does not meet requirements,"Data is not accurate enough for intended use, Results are not convenient for reports or records, Delays due to having to recheck the site",Data accuracy,Improve remote monitoring capabilities,"Price / total cost, Data accuracy, Ability to handle difficult terrain","Orthophoto / current status images, 2D/3D maps, Coordinate maps / digital data layers, Current status video, Before-after comparison by timeline, Data for technical records",Events / seminars / exhibitions,"Similar completed projects, Equipment and technical capabilities, Price, Legal records / licenses / invoices, Sample reports or delivered outputs",Never occurred,Need quotes per specific project,By area,Continuous monitoring / monthly or more frequent,Framework contract for multiple batches per year,"Advance payment, remaining balance upon delivery",Very useful,Useful in some cases,Useful in some cases,Very useful,Not necessary,Useful in some cases,"Private secure storage, In-depth data analysis",Concern about data security
+25/03/2026 19:09:31,La Nga Forestry Co. Ltd.,Head of Forest Resources Management,"Yes, partial participation",Forestry / Afforestation / Forest Inventory / Carbon Credits,Mountainous / Forest / Complex Terrain,Over 1,000 ha,Over 10 times/year,"Hire external traditional surveying units, Use satellite imagery / existing maps, Rely on manual field reports / phone images",Yes,Traditional surveying unit,Weekly or more frequent,Not using specialized tools,Internal shared folders,"Spend a lot of time on site, Consume a lot of manpower, Data is not accurate enough or lacks consistency",Delayed progress,"Data is not accurate enough for intended use, Data is difficult to compare over time, Delays due to having to recheck the site",Data accuracy,Improve remote monitoring capabilities,"Price / total cost, Experience with similar projects, Field coordination capability, Ability to handle difficult terrain","Orthophoto / current status images, 2D/3D maps, Coordinate maps / digital data layers, Current status video, Before-after comparison by timeline, Dashboard / online data portal, Data for technical records","Referral from partners / acquaintances, Google / online search, Events / seminars / exhibitions","Similar completed projects, Equipment and technical capabilities, Estimated implementation time, Price, Legal records / licenses / invoices, Sample reports or delivered outputs",Over 250 million VND,150–250 million VND,By area,Continuous monitoring / monthly or more frequent,Periodic package by month or quarter,"Advance payment, remaining balance upon delivery",Very useful,Very useful,Very useful,Very useful,Very useful,Useful in some cases,"Procedural / legal support, Private secure storage",Concern about unsatisfactory data quality
+25/03/2026 19:17:59,My Son Landscape Protection Management Board,Head of Project Management Board,"Yes, direct participation",Conservation / Heritage / Ecotourism,Suburban areas,Over 1,000 ha,Under 2 times/year,Hire freelancers / drone crews,Yes,Freelancer / drone crew,Only when special needs arise,Not using specialized tools,"Separate files sent via email, Files sent via Zalo / messaging apps, Internal shared folders",High implementation cost,Cost higher than expected,Data is difficult to compare over time,Actual cost,Monitor progress / changes over time,"Price / total cost, Legal records / invoices / documents, Easy-to-use output reports","Orthophoto / current status images, 2D/3D maps, Current status video, Before-after comparison by timeline","Referral from partners / acquaintances, Google / online search, Facebook / Zalo / social networks","Similar completed projects, Equipment and technical capabilities, Price, Sample reports or delivered outputs",Over 250 million VND,150–250 million VND,Per total project package,"Infrequently, only when specifically requested",Hire per arising need,"Advance payment, remaining balance upon delivery",Very useful,Very useful,Very useful,Useful in some cases,Not necessary,Not necessary,"Procedural / legal support, Dashboard / online data portal",Concern about unexpected costs
+25/03/2026 19:23:57,Ngu Hanh Son Scenic Landscape Management Board,Deputy Head of Management Board,"Yes, partial participation",Conservation / Heritage / Ecotourism,Suburban areas,50–200 ha,Under 2 times/year,Rely on manual field reports / phone images,No,,Monthly,Not using specialized tools,Internal shared folders,No significant difficulties,,Delays due to having to recheck the site,Data accuracy,Monitor progress / changes over time,"Price / total cost, Data accuracy, Experience with similar projects, Reliability / reputation","Orthophoto / current status images, 2D/3D maps, Coordinate maps / digital data layers, Current status video","Google / online search, Facebook / Zalo / social networks, Industry groups","Equipment and technical capabilities, Price, Legal records / licenses / invoices, Sample reports or delivered outputs",Never occurred,150–250 million VND,Per total project package,By periodic milestones in the year,Not determined,"Advance payment, remaining balance upon delivery",Useful in some cases,Useful in some cases,Very useful,Useful in some cases,Useful in some cases,Not necessary,"Procedural / legal support, Fast / urgent processing",Concern about unsatisfactory data quality
+26/03/2026 12:28:58,Nam Hoi An Development LLC,Head of Project Development,"Yes, direct participation",Real Estate / Resorts / Landscape Infrastructure,Suburban areas,200–1,000 ha,Under 2 times/year,Hire freelancers / drone crews,No,,Only when special needs arise,Not using specialized tools,"Files sent via Zalo / messaging apps, Internal shared folders",No significant difficulties,No significant problems,No significant problems encountered,Data accuracy,Improve remote monitoring capabilities,"Price / total cost, Data accuracy, Experience with similar projects, Field coordination capability, Reliability / reputation","Orthophoto / current status images, 2D/3D maps, Current status video, Before-after comparison by timeline","Referral from partners / acquaintances, Google / online search, Facebook / Zalo / social networks","Price, Legal records / licenses / invoices, Sample reports or delivered outputs",150–250 million VND,150–250 million VND,Per total project package,"Infrequently, only when specifically requested",Hire per arising need,"Advance payment, remaining balance upon delivery",Very useful,Very useful,Very useful,Very useful,Not necessary,Not necessary,"Procedural / legal support, Dashboard / online data portal, Private secure storage",Concern about unsatisfactory data quality
+26/03/2026 12:44:45,Nam Thinh Agri-forestry Services Company,Head of Agri-forestry Technical Department,"Yes, partial participation",Forestry / Afforestation / Forest Inventory / Carbon Credits,Suburban areas,50–200 ha,2-5 times/year,Hire external traditional surveying units,Yes,Traditional surveying unit,Quarterly,Not using specialized tools,"Files sent via Zalo / messaging apps, Internal shared folders","Spend a lot of time on site, Consume a lot of manpower",Data quality does not meet requirements,"Data is not accurate enough for intended use, Results are not convenient for reports or records",Data accuracy,Surveying current status,"Price / total cost, Implementation schedule, Data accuracy, Legal records / invoices / documents","Orthophoto / current status images, Coordinate maps / digital data layers, Data for technical records","Google / online search, Industry groups, Events / seminars / exhibitions","Similar completed projects, Equipment and technical capabilities, Price, Sample reports or delivered outputs",100–150 million VND,100–150 million VND,Per total project package,By periodic milestones in the year,Periodic package by month or quarter,"Advance payment, remaining balance upon delivery",Very useful,Useful in some cases,Very useful,Very useful,Useful in some cases,Useful in some cases,"Procedural / legal support, Dashboard / online data portal",Concern about unsatisfactory data quality
+26/03/2026 12:59:28,North Quang Binh Forestry Co. Ltd.,Head of Planted Forest Management Department,"Yes, partial participation",Forestry / Afforestation / Forest Inventory / Carbon Credits,Suburban areas,50–200 ha,Over 10 times/year,Self-operate consumer drones,No,,Weekly or more frequent,"Excel / Google Sheets, AutoCAD / Civil 3D, QGIS / ArcGIS / GIS software","Files sent via Zalo / messaging apps, Internal shared folders, PDF reports, Maps or structured digital data",No significant difficulties,No significant problems,No significant problems encountered,Data accuracy,Monitor progress / changes over time,"Price / total cost, Implementation schedule, Data accuracy, Legal records / invoices / documents","Coordinate maps / digital data layers, Current status video, Before-after comparison by timeline, Dashboard / online data portal","Industry groups, Previous suppliers, Events / seminars / exhibitions","Equipment and technical capabilities, Estimated implementation time, Price, Legal records / licenses / invoices, Sample reports or delivered outputs",150–250 million VND,150–250 million VND,Per total project package,Continuous monitoring / monthly or more frequent,Framework contract for multiple batches per year,"Advance payment, remaining balance upon delivery",Very useful,Useful in some cases,Useful in some cases,Very useful,Not necessary,Not necessary,"Procedural / legal support, Dashboard / online data portal, Fast / urgent processing, Private secure storage",Concern about lack of legal records / documents
+26/03/2026 13:09:17,Huy Nguyen Forestry Company,Deputy Manager of Forestry Technical Department,"Yes, partial participation",Forestry / Afforestation / Forest Inventory / Carbon Credits,Suburban areas,50–200 ha,2-5 times/year,Rely on manual field reports / phone images,No,,Weekly or more frequent,Not using specialized tools,Internal shared folders,Spend a lot of time on site,Delayed progress,Delays due to having to recheck the site,Data accuracy,Monitor progress / changes over time,"Price / total cost, Data accuracy, Experience with similar projects, Reliability / reputation","Orthophoto / current status images, Coordinate maps / digital data layers, Current status video, Dashboard / online data portal, Data for technical records","Facebook / Zalo / social networks, Industry groups, Events / seminars / exhibitions","Similar completed projects, Equipment and technical capabilities, Price, Legal records / licenses / invoices",150–250 million VND,150–250 million VND,Per total project package,Continuous monitoring / monthly or more frequent,Framework contract for multiple batches per year,"Advance payment, remaining balance upon delivery",Very useful,Very useful,Very useful,Very useful,Useful in some cases,Very useful,"Procedural / legal support, Private secure storage",Concern about data security
+26/03/2026 13:55:38,Quang Nam Agriculture and Forestry Development Investment LLC,Manager,"Yes, direct participation",Mining / Minerals / Building Materials,Mountainous / Forest / Complex Terrain,50–200 ha,Not fixed / depends on project,Rely on manual field reports / phone images,No,,Weekly or more frequent,Not using specialized tools,"Separate files sent via email, Files sent via Zalo / messaging apps, Internal shared folders",No significant difficulties,No significant problems,"Results are not convenient for reports or records, Data is difficult to compare over time",Usability for reports / records,Monitor progress / changes over time,"Price / total cost, Experience with similar projects, Field coordination capability, Ability to handle difficult terrain","2D/3D maps, Current status video, Dashboard / online data portal, Data for technical records","Referral from partners / acquaintances, Google / online search, Events / seminars / exhibitions","Equipment and technical capabilities, Price, Sample reports or delivered outputs",50–100 million VND,50–100 million VND,Per total project package,"Infrequently, only when specifically requested",Framework contract for multiple batches per year,"Advance payment, remaining balance upon delivery",Very useful,Useful in some cases,Useful in some cases,Useful in some cases,Useful in some cases,Not necessary,"Procedural / legal support, Fast / urgent processing, Private secure storage",Concern about delayed progress
+26/03/2026 14:25:15,Hoa Sen Viet Landscape Greenery LLC,Director,"Yes, direct participation",Real Estate / Resorts / Landscape Infrastructure,Suburban areas,Under 10 ha,Not fixed / depends on project,"Hire freelancers / drone crews, Use satellite imagery / existing maps, Rely on manual field reports / phone images",Yes,"Freelancer / drone crew, Consulting unit integrating surveying and GIS",Monthly,"Excel / Google Sheets, Regular map applications, Not using specialized tools","Files sent via Zalo / messaging apps, PDF reports","Data is not accurate enough or lacks consistency, Difficult to track changes over time",No significant problems,No significant problems encountered,Data accuracy,Monitor progress / changes over time,"Price / total cost, Data accuracy, Legal records / invoices / documents, Experience with similar projects","Orthophoto / current status images, Current status video, Dashboard / online data portal","Google / online search, Facebook / Zalo / social networks","Equipment and technical capabilities, Price, Legal records / licenses / invoices",Under 50 million VND,Under 50 million VND,Per total project package,"Infrequently, only when specifically requested",Hire per arising need,"Advance payment, remaining balance upon delivery",Very useful,Very useful,Very useful,Very useful,Not necessary,Not necessary,"Procedural / legal support, Dashboard / online data portal",Concern about unexpected costs
+26/03/2026 14:40:39,Kha Lam Forestry Company,Technical Specialist,"Yes, direct participation",Forestry / Afforestation / Forest Inventory / Carbon Credits,Suburban areas,50–200 ha,2-5 times/year,Hire external traditional surveying units,Yes,"Traditional surveying unit, Consulting unit integrating surveying and GIS",Only when special needs arise,"AutoCAD / Civil 3D, QGIS / ArcGIS / GIS software","Files sent via Zalo / messaging apps, Internal shared folders","Spend a lot of time on site, Consume a lot of manpower",Delayed progress,Delays due to having to recheck the site,Delivery schedule,Surveying current status,"Price / total cost, Implementation schedule, Field coordination capability","Orthophoto / current status images, 2D/3D maps, Coordinate maps / digital data layers","Google / online search, Facebook / Zalo / social networks, Previous suppliers","Equipment and technical capabilities, Estimated implementation time, Price, Legal records / licenses / invoices, Sample reports or delivered outputs",150–250 million VND,150–250 million VND,Per total project package,By periodic milestones in the year,Framework contract for multiple batches per year,"Advance payment, remaining balance upon delivery",Very useful,Very useful,Useful in some cases,Very useful,Useful in some cases,Useful in some cases,"Procedural / legal support, Private secure storage",Concern about unsatisfactory data quality
+26/03/2026 15:15:19,Van Kim Real Estate Company,Technical Manager,"Yes, direct participation",Real Estate / Resorts / Landscape Infrastructure,Suburban areas,10–50 ha,Not fixed / depends on project,Hire freelancers / drone crews,Yes,Freelancer / drone crew,Quarterly,Regular map applications,Internal shared folders,Results are not convenient for reports or records,Output reports are difficult to use,Data is not accurate enough for intended use,Data accuracy,Monitor progress / changes over time,"Price / total cost, Data accuracy, Legal records / invoices / documents, Experience with similar projects, Reliability / reputation, Ability to handle difficult terrain","Orthophoto / current status images, 2D/3D maps, Coordinate maps / digital data layers, Current status video","Referral from partners / acquaintances, Google / online search, Facebook / Zalo / social networks","Equipment and technical capabilities, Estimated implementation time, Price, Legal records / licenses / invoices, Sample reports or delivered outputs",100–150 million VND,100–150 million VND,Per total project package,By project phase,Hire per arising need,"Advance payment, remaining balance upon delivery",Very useful,Useful in some cases,Very useful,Very useful,Very useful,Useful in some cases,"Procedural / legal support, Private secure storage",Concern about unsatisfactory data quality
+26/03/2026 15:29:58,Hoang Au Agriculture & Forestry Co. Ltd.,Manager,"Yes, direct participation",Forestry / Afforestation / Forest Inventory / Carbon Credits,Mountainous / Forest / Complex Terrain,200–1,000 ha,Over 10 times/year,Self-operate consumer drones,No,,Weekly or more frequent,AutoCAD / Civil 3D,"Files sent via Zalo / messaging apps, Internal shared folders, Maps or structured digital data, Online data portal / dashboard",Data is not accurate enough or lacks consistency,Delayed progress,Delays due to having to recheck the site,Data accuracy,Early detection of risks or anomalies,"Price / total cost, Data accuracy, Field coordination capability, Ability to handle difficult terrain","Orthophoto / current status images, Coordinate maps / digital data layers, Current status video","Google / online search, Industry groups, Events / seminars / exhibitions","Equipment and technical capabilities, Price, Legal records / licenses / invoices, Sample reports or delivered outputs",150–250 million VND,150–250 million VND,Per total project package,Continuous monitoring / monthly or more frequent,Framework contract for multiple batches per year,"Advance payment, remaining balance upon delivery",Very useful,Useful in some cases,Very useful,Very useful,Very useful,Not necessary,"Procedural / legal support, Private secure storage",Concern about lack of legal records / documents
+27/03/2026 13:17:14,Hyatt Regency Danang Resort and Spa,Sales Executive,"No, mainly just use data",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+27/03/2026 13:30:38,Quang Binh Seed Co. Ltd.,Agricultural Technical Specialist,"Yes, partial participation",Agriculture / Farms / Raw Material Areas,Suburban areas,50–200 ha,6-10 times/year,Rely on manual field reports / phone images,No,,Monthly,Not using specialized tools,Files sent via Zalo / messaging apps,Spend a lot of time on site,Data quality does not meet requirements,No significant problems encountered,Usability for reports / records,Improve remote monitoring capabilities,"Price / total cost, Implementation schedule, Legal records / invoices / documents, Experience with similar projects, Ability to handle difficult terrain","Orthophoto / current status images, 2D/3D maps, Current status video","Referral from partners / acquaintances, Facebook / Zalo / social networks, Industry groups","Equipment and technical capabilities, Price, Legal records / licenses / invoices, Sample reports or delivered outputs",150–250 million VND,Need quotes per specific project,By area,By periodic milestones in the year,Framework contract for multiple batches per year,"Advance payment, remaining balance upon delivery",Very useful,Very useful,Very useful,Very useful,Useful in some cases,Useful in some cases,"Procedural / legal support, Private secure storage",Concern about data security
+    </script>
+
+    <script>
+        // Minimalist Monochromatic Palette based on #391969
+        const colorPalette = [
+            'rgb(57, 25, 105)',
+            'rgba(57, 25, 105, 0.90)',
+            'rgba(57, 25, 105, 0.80)',
+            'rgba(57, 25, 105, 0.70)',
+            'rgba(57, 25, 105, 0.60)',
+            'rgba(57, 25, 105, 0.50)',
+            'rgba(57, 25, 105, 0.40)',
+            'rgba(57, 25, 105, 0.30)',
+            'rgba(57, 25, 105, 0.20)',
+            'rgba(57, 25, 105, 0.10)'
+        ];
+
+        const chartInstances = [];
+        const resizeObserver = new ResizeObserver(entries => {
+            requestAnimationFrame(() => {
+                chartInstances.forEach(chart => {
+                    if (chart) chart.resize();
+                });
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const csvText = document.getElementById('csv-data').textContent.trim();
+            Papa.parse(csvText, {
+                header: true, skipEmptyLines: true,
+                complete: function (results) { processData(results.data); initScrollSpy(); }
+            });
+        });
+
+        // ------------------ ScrollSpy ------------------
+        function initScrollSpy() {
+            const sections = document.querySelectorAll('.dashboard-section');
+            const navLinks = document.querySelectorAll('.nav-links a');
+
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    // Add an offset so it highlights a bit earlier
+                    if (pageYOffset >= sectionTop - 200) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href').substring(1) === current) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+        }
+
+        // ------------------ DOM Builders ------------------
+        function createSectionDiv(id, title) {
+            document.getElementById('dashboard-sections').insertAdjacentHTML('beforeend', `
+               <div id="${id}" class="dashboard-section" style="margin-bottom: 5rem; padding-top: 2rem; scroll-margin-top: 80px; animation: fadeInUp 0.8s ease;">
+                  <h2 style="color:var(--primary); border-bottom:3px solid var(--accent); display:inline-block; padding-bottom:0.5rem; margin-bottom:2rem; font-size:1.6rem">${title}</h2>
+                  <div class="dashboard-grid" style="display:grid; grid-template-columns: 1fr; gap: 2rem;"></div>
+               </div>
+            `);
+        }
+        function addChartBox(sectionId, chartId, isWide = false, customHeight = null) {
+            let card = document.createElement('div');
+            card.className = 'card';
+            if (isWide) card.style.gridColumn = '1 / -1';
+            let chartCon = document.createElement('div');
+            chartCon.id = chartId;
+            chartCon.className = 'chart-container';
+            if (customHeight) {
+                chartCon.style.height = customHeight;
+            } else {
+                chartCon.style.height = isWide ? '450px' : '380px';
+            }
+            card.appendChild(chartCon);
+            document.getElementById(sectionId).querySelector('.dashboard-grid').appendChild(card);
+        }
+
+        // ------------------ Data Extraction ------------------
+        function extractCounts(data, col, split = false) {
+            let counts = {};
+            data.forEach(r => {
+                let v = r[col];
+                if (!v || v.trim() === '') {
+                    v = 'N/A';
+                }
+
+                if (split && v !== 'N/A') {
+                    v.split(',').forEach(x => {
+                        x = x.trim();
+                        if (x) counts[x] = (counts[x] || 0) + 1;
+                    });
+                } else {
+                    v = v.trim();
+                    if (v) counts[v] = (counts[v] || 0) + 1;
+                }
+            });
+            return Object.keys(counts).map(k => ({ name: k, value: counts[k] })).sort((a, b) => b.value - a.value);
+        }
+
+        // ------------------ ECharts Renderers ------------------
+        function initChart(id, title, option) {
+            const el = document.getElementById(id);
+            const myChart = echarts.init(el);
+            let defaultOption = {
+                title: { text: title, textStyle: { color: '#391969', fontFamily: 'Inter', fontSize: 15, fontWeight: '600' } },
+                tooltip: { trigger: 'item', textStyle: { fontFamily: 'Inter' }, confine: true },
+                color: colorPalette
+            };
+            myChart.setOption(Object.assign({}, defaultOption, option));
+            chartInstances.push(myChart);
+            resizeObserver.observe(el);
+            return myChart;
+        }
+
+        function renderDonut(id, title, data, col) {
+            let counts = extractCounts(data, col);
+            initChart(id, title, {
+                series: [{ type: 'pie', radius: ['40%', '70%'], itemStyle: { borderRadius: 5, borderColor: '#fff', borderWidth: 2 }, data: counts }]
+            });
+        }
+
+        function renderPie(id, title, data, col, split = false) {
+            let counts = extractCounts(data, col, split);
+            initChart(id, title, {
+                series: [{ type: 'pie', radius: '70%', data: counts }]
+            });
+        }
+
+        function renderTreemap(id, title, data, col) {
+            let counts = extractCounts(data, col);
+            initChart(id, title, {
+                series: [{
+                    type: 'treemap',
+                    data: counts,
+                    roam: false,
+                    nodeClick: false,
+                    breadcrumb: { show: false },
+                    label: { show: true, formatter: '{b}\n({c})' }
+                }]
+            });
+        }
+
+        function renderColumn(id, title, data, col) {
+            let counts = extractCounts(data, col);
+            counts.sort((a, b) => a.name.localeCompare(b.name));
+            initChart(id, title, {
+                xAxis: { type: 'category', data: counts.map(x => x.name), axisLabel: { interval: 0, rotate: 25 } },
+                yAxis: { type: 'value' },
+                series: [{ type: 'bar', data: counts.map(x => x.value), itemStyle: { borderRadius: [5, 5, 0, 0] } }]
+            });
+        }
+
+        function renderHBar(id, title, data, col, split = false, highlightColor = null) {
+            let counts = extractCounts(data, col, split);
+            counts.reverse(); // For ECharts bottom-up
+            let seriesData = counts.map((x, i) => {
+                if (highlightColor && i >= Object.keys(counts).length - 3) {
+                    return { value: x.value, itemStyle: { color: highlightColor } }; // Highlight top 3
+                }
+                return x.value;
+            });
+
+            // Fix height dynamically if too many items
+            let el = document.getElementById(id);
+            if (el) el.style.height = Math.max(380, counts.length * 45) + 'px';
+
+            initChart(id, title, {
+                grid: { left: '5%', right: '5%', bottom: '5%', containLabel: true },
+                xAxis: { type: 'value' },
+                yAxis: { type: 'category', data: counts.map(x => x.name), axisLabel: { fontFamily: 'Inter', width: 220, overflow: 'truncate' } },
+                series: [{ type: 'bar', data: seriesData, itemStyle: { borderRadius: [0, 5, 5, 0] } }]
+            });
+        }
+
+        function renderStacked(id, title, data, xCol, yColSplit) {
+            let xCats = extractCounts(data, xCol).map(x => x.name);
+            let legendCats = new Set();
+            let matrix = {};
+            xCats.forEach(x => matrix[x] = {});
+
+            data.forEach(r => {
+                let xVal = r[xCol] ? r[xCol].trim() : null;
+                if (!xVal || !matrix[xVal]) return;
+                let yStr = r[yColSplit];
+                if (yStr) {
+                    yStr.split(',').forEach(y => {
+                        y = y.trim();
+                        if (y) { legendCats.add(y); matrix[xVal][y] = (matrix[xVal][y] || 0) + 1; }
+                    });
+                }
+            });
+
+            let legArr = Array.from(legendCats);
+            let seriesData = legArr.map(leg => {
+                return {
+                    name: leg.length > 30 ? leg.substring(0, 30) + '...' : leg,
+                    type: 'bar', stack: 'total',
+                    data: xCats.map(x => matrix[x][leg] || 0)
+                }
+            });
+
+            initChart(id, title, {
+                legend: { type: 'scroll', bottom: 0 },
+                grid: { bottom: '15%', left: '5%', right: '5%', containLabel: true },
+                xAxis: { type: 'category', data: xCats.map(n => n.length > 15 ? n.substring(0, 15) + '...' : n), axisLabel: { rotate: 20 } },
+                yAxis: { type: 'value' },
+                series: seriesData
+            });
+        }
+
+        function renderFunnel(id, title, data, col, split = false) {
+            let counts = extractCounts(data, col, split);
+            initChart(id, title, {
+                series: [{
+                    type: 'funnel',
+                    left: '10%', top: 50, bottom: 20, width: '60%',
+                    sort: 'descending', gap: 2,
+                    label: { show: true, position: 'right' },
+                    data: counts
+                }]
+            });
+        }
+
+        function renderPolarArea(id, title, data, col, split = false) {
+            let counts = extractCounts(data, col, split);
+            initChart(id, title, {
+                series: [{
+                    type: 'pie',
+                    radius: [20, '70%'],
+                    center: ['50%', '50%'],
+                    roseType: 'area',
+                    itemStyle: { borderRadius: 5 },
+                    data: counts
+                }]
+            });
+        }
+
+        function renderRadar(id, title, data, col, split = true) {
+            let counts = extractCounts(data, col, split);
+            if (counts.length === 0) return;
+            let max = counts[0].value + 1;
+            let indicator = counts.map(c => ({ name: c.name, max: max }));
+            initChart(id, title, {
+                radar: {
+                    indicator: indicator,
+                    radius: '45%',
+                    shape: 'polygon',
+                    axisName: {
+                        formatter: function (value) {
+                            if (value.length > 20) {
+                                return value.match(/.{1,20}(\s|$)/g).join('\n');
+                            }
+                            return value;
+                        }
+                    }
+                },
+                series: [{ type: 'radar', areaStyle: { opacity: 0.3 }, data: [{ value: counts.map(c => c.value), name: 'Deliverables' }] }]
+            });
+        }
+
+        function renderClustered(id, title, data, col1, col2) {
+            let c1 = extractCounts(data, col1);
+            let c2 = extractCounts(data, col2);
+            let allCats = Array.from(new Set([...c1.map(x => x.name), ...c2.map(x => x.name)]));
+            let map1 = {}; c1.forEach(x => map1[x.name] = x.value);
+            let map2 = {}; c2.forEach(x => map2[x.name] = x.value);
+
+            initChart(id, title, {
+                legend: { data: ['Spent Budget (Past 24 Months)', 'Considered Budget (Future)'], bottom: 0 },
+                grid: { bottom: '10%', containLabel: true },
+                xAxis: { type: 'category', data: allCats.map(n => n.length > 15 ? n.substring(0, 15) + '...' : n), axisLabel: { rotate: 20 } },
+                yAxis: { type: 'value' },
+                series: [
+                    { name: 'Spent Budget (Past 24 Months)', type: 'bar', data: allCats.map(n => map1[n] || 0) },
+                    { name: 'Considered Budget (Future)', type: 'bar', data: allCats.map(n => map2[n] || 0) }
+                ]
+            });
+        }
+
+        function render100Stacked(id, title, data, cols) {
+            const scales = ['Not necessary', 'Useful in some cases', 'Very useful'];
+            let chartData = scales.map(s => ({ name: s, type: 'bar', stack: 'total', barWidth: 30, data: [] }));
+            let yLabels = [];
+
+            cols.forEach(col => {
+                let nameMatch = col.match(/\[(.*)\]/);
+                let shortName = nameMatch ? nameMatch[1] : col;
+                shortName = shortName.length > 25 ? shortName.substring(0, 25) + '...' : shortName;
+                yLabels.push(shortName);
+
+                let counts = {};
+                data.forEach(r => { let v = r[col]; if (v) counts[v] = (counts[v] || 0) + 1; });
+                let total = Object.values(counts).reduce((a, b) => a + b, 0);
+
+                scales.forEach((scale, i) => {
+                    let pct = total > 0 ? ((counts[scale] || 0) / total) * 100 : 0;
+                    chartData[i].data.push(pct.toFixed(1));
+                });
+            });
+
+            const customColors = ['#cccccc', '#8571a8', '#391969'];
+
+            initChart(id, title, {
+                color: customColors,
+                legend: { bottom: 0 },
+                grid: { left: '5%', right: '5%', bottom: '15%', containLabel: true },
+                xAxis: { type: 'value', max: 100, axisLabel: { formatter: '{value} %' } },
+                yAxis: { type: 'category', data: yLabels },
+                series: chartData
+            });
+        }
+
+        function processData(data) {
+
+            // SECTION 1: Overview & Demographics
+            createSectionDiv('overview', '1. Overview & Demographics');
+            addChartBox('overview', 'c1'); renderDonut('c1', '1. Respondent Position', data, 'Position');
+            addChartBox('overview', 'c2'); renderPie('c2', '2. Participation in Supplier Selection', data, 'Do you participate in selecting suppliers, proposing budgets, or approving costs for surveying/field monitoring activities?');
+            addChartBox('overview', 'c3'); renderTreemap('c3', '3. Industry / Sector', data, 'Industry/Sector');
+            addChartBox('overview', 'c4'); renderTreemap('c4', '4. Main Operating Area', data, 'Main Operating Area');
+            addChartBox('overview', 'c5'); renderColumn('c5', '5. Total Area / Land Managed', data, 'Total Area/Land Managed');
+
+            // SECTION 2: Operations & Current Status
+            createSectionDiv('operations', '2. Operations & Current Status');
+            addChartBox('operations', 'c6'); renderColumn('c6', '6. Average Projects per Year', data, 'Average number of surveying/monitoring projects per year');
+            addChartBox('operations', 'c7'); renderHBar('c7', '7. Surveying Methods (Past 12 Months)', data, 'Methods used for surveying/monitoring in the past 12 months', true);
+            addChartBox('operations', 'c8'); renderDonut('c8', '8. Hired External Suppliers (Past 24 Months)', data, 'Have you hired external suppliers for surveying/monitoring in the past 24 months?');
+            addChartBox('operations', 'c9'); renderHBar('c9', '9. Type of Supplier Worked With', data, 'If yes, what type of supplier have you worked with?', true);
+            addChartBox('operations', 'c10'); renderColumn('c10', '10. Frequency of Data Collection', data, 'Frequency of collecting or updating field data');
+            addChartBox('operations', 'c11'); renderHBar('c11', '11. Software / Tools Used', data, 'Software/tools used to store, process, or track field data', true);
+            addChartBox('operations', 'c12'); renderPie('c12', '12. Data Storage & Sharing Methods', data, 'How is field data usually stored or shared in recent deployments?', true);
+
+            // SECTION 3: Pain Points & Problems
+            createSectionDiv('pain-points', '3. Pain Points & Problems');
+
+            addChartBox('pain-points', 'c17'); renderHBar('c17', '17. BIGGEST Need in the Next 12 Months', data, 'BIGGEST need to address related to the field in the next 12 months', false, '#5e2aab');
+
+            addChartBox('pain-points', 'c13', true); renderStacked('c13', '13. Difficulties in Recent Surveying (By Industry)', data, 'Industry/Sector', 'Difficulties faced in the most recent surveying/monitoring');
+            addChartBox('pain-points', 'c14', true); renderStacked('c14', '14. Difficulties in Recent Hiring (By Industry)', data, 'Industry/Sector', 'Biggest difficulty in the most recent hiring of a supplier');
+            addChartBox('pain-points', 'c15'); renderHBar('c15', '15. Problems Encountered in Deployments (Top 3 Highlighted)', data, 'Have you encountered any of these problems in recent deployments?', true, '#5e2aab'); // Dark accent color for highlight
+            addChartBox('pain-points', 'c16'); renderPolarArea('c16', '16. Biggest Barrier to Trying a New Supplier', data, 'Biggest barrier to trying a new supplier');
+            addChartBox('pain-points', 'c18'); renderDonut('c18', '18. Most Valued Metric for Evaluation', data, 'Most valued metric when evaluating recent surveying/monitoring');
+
+            // SECTION 4: Buying Behavior
+            createSectionDiv('behavior', '4. Buying Behavior & Criteria');
+            addChartBox('behavior', 'c19'); renderPie('c19', '19. Channels Searched for New Suppliers', data, 'Channels searched when finding a new supplier', true);
+            addChartBox('behavior', 'c20'); renderFunnel('c20', '20. Information Checked First', data, 'Information checked first from a list of suppliers', true);
+            addChartBox('behavior', 'c21'); renderFunnel('c21', '21. Top 3 Selection Criteria', data, 'Top 3 criteria for selecting a service provider', true);
+            addChartBox('behavior', 'c22'); renderRadar('c22', '22. Most Useful Deliverables', data, 'Most useful deliverables', true);
+            addChartBox('behavior', 'c23_24', true); renderClustered('c23_24', '23 & 24. Budget Summary: Past vs. Future', data, 'Approximate budget spent per surveying/monitoring project in the past 24 months', 'Considered budget for a similar future need');
+            addChartBox('behavior', 'c25'); renderDonut('c25', '25. How is Cost Evaluated?', data, 'How is the cost for this type of service usually evaluated?');
+            addChartBox('behavior', 'c26'); renderDonut('c26', '26. Form of Need Arisal', data, 'Under what form do surveying/monitoring needs usually arise?');
+            addChartBox('behavior', 'c27'); renderPie('c27', '27. Most Suitable Purchasing Model', data, 'Most suitable service purchasing model');
+            addChartBox('behavior', 'c28'); renderHBar('c28', '28. Payment Method', data, 'Payment method usually applied for outsourced services', false);
+
+            // SECTION 5: Feature Evaluation
+            createSectionDiv('features', '5. Feature Evaluation');
+            let likertCols = [
+                "Usefulness: [Support for flight permissions/procedures]",
+                "Usefulness: [Online data portal / dashboard]",
+                "Usefulness: [Fast processing and delivery]",
+                "Usefulness: [Private secure data storage]",
+                "Usefulness: [Support for in-depth data analysis]",
+                "Usefulness: [Consulting on data integration into internal workflows]"
+            ];
+            addChartBox('features', 'c29', true); render100Stacked('c29', '29 -> 34. Usefulness of 6 Additional Items', data, likertCols);
+            addChartBox('features', 'c35'); renderHBar('c35', '35. Top 2 Priorities (If Executed)', data, 'Top 2 priorities among the additional items above', true);
+
+        }
+    </script>
+</body>
+
+</html>
